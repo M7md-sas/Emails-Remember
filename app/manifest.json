@@ -17,7 +17,7 @@
   ],
   "shortcuts": [
     { "name": "وش أستعمل", "url": "./#/new" },
-    { "name": "قائمة الناقص", "url": "./#/review" }
+    { "name": "قائمة النواقص", "url": "./#/review" }
   ],
   "share_target": {
     "action": "./index.html",

@@ -3,9 +3,15 @@
 //  مهمته واحدة: أن يفتح التطبيق وأنت على وضع الطيران. البيانات ليست هنا —
 //  هي في IndexedDB — وهذا يخزّن هيكل التطبيق فقط.
 //
-//  ارفع الرقم عند كل نشر يغيّر ملفاً من القائمة، وإلا بقي القديم عند المستخدم.
+//  الاستراتيجية: يقدّم المخزون فوراً فيفتح التطبيق بلا انتظار، ثم يجيب
+//  النسخة الجديدة في الخلفية فتصير جاهزة للفتحة القادمة. الترتيب مقصود —
+//  لو سألنا الشبكة أولاً لتعطّل الفتح على اتصال بطيء، وهذا يناقض سبب وجود
+//  التطبيق: أن تلقى الجواب وأنت واقف على شاشة دخول.
+//
+//  ارفع الرقم عند كل نشر يغيّر ملفاً من القائمة. بدونه يُمسح المخزون القديم
+//  ولا يُبنى الجديد، فيظل المستخدم على نسخة قديمة بلا أن يدري.
 // ---------------------------------------------------------------------------
-const VERSION = 'daftar-v1';
+const VERSION = 'daftar-v2';
 
 const SHELL = [
   './',
@@ -61,24 +67,33 @@ self.addEventListener('fetch', (event) => {
   // طلبات الخادم لا تُخزَّن أبداً — البيانات القديمة أسوأ من غيابها
   if (url.origin !== self.location.origin) return;
 
-  // التنقل يرجع للصفحة المخزّنة عند انقطاع الشبكة، ومنها يقلع التطبيق محلياً
-  if (request.mode === 'navigate') {
-    event.respondWith(
-      fetch(request).catch(() => caches.match('./index.html', { ignoreSearch: true }))
-    );
-    return;
-  }
-
-  event.respondWith(
-    caches.match(request).then((hit) => {
-      if (hit) return hit;
-      return fetch(request).then((res) => {
-        if (res.ok && res.type === 'basic') {
-          const copy = res.clone();
-          caches.open(VERSION).then((c) => c.put(request, copy));
-        }
-        return res;
-      });
-    })
-  );
+  event.respondWith(handle(request));
 });
+
+async function handle(request) {
+  const cache = await caches.open(VERSION);
+  const hit = await cache.match(request, { ignoreSearch: request.mode === 'navigate' });
+
+  // التحديث في الخلفية: لا ننتظره ولا نُسقط الطلب إن فشل
+  const fresh = fetch(request)
+    .then((res) => {
+      if (res && res.ok && res.type === 'basic') cache.put(request, res.clone());
+      return res;
+    })
+    .catch(() => null);
+
+  if (hit) return hit;
+
+  const res = await fresh;
+  if (res) return res;
+
+  // بلا شبكة وبلا نسخة: التنقل يرجع للصفحة المخزّنة فيقلع التطبيق محلياً
+  if (request.mode === 'navigate') {
+    const shell = await cache.match('./index.html', { ignoreSearch: true });
+    if (shell) return shell;
+  }
+  return new Response('غير متاح بلا اتصال', {
+    status: 503,
+    headers: { 'Content-Type': 'text/plain; charset=utf-8' },
+  });
+}

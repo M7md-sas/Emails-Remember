@@ -106,7 +106,7 @@ function summary(plan, skipped, hadPasswords) {
       </p>
       <p class="tiny muted">
         كل حساب يُحفظ بعلامة "مستورد" وبلا هوية. تراجعه على مهلك من قائمة
-        الناقص، أو يتأكّد وحده أول ما تستعمله وينجح الدخول.
+        النواقص، أو يتأكّد وحده أول ما تستعمله وينجح الدخول.
       </p>
       <button class="btn primary big wide" data-act="apply">احفظها كلها</button>
     </div>`;

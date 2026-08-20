@@ -4,8 +4,8 @@
     {
       "name": "daftar",
       "runtimeExecutable": "python",
-      "runtimeArgs": ["-m", "http.server", "5180", "--directory", "app"],
-      "port": 5180
+      "runtimeArgs": ["tools/serve.py", "5181"],
+      "port": 5181
     }
   ]
 }

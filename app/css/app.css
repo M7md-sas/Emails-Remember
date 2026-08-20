@@ -415,6 +415,25 @@ input:focus, select:focus, textarea:focus, .search-head input:focus {
 .closed { border: 1px solid var(--line); border-radius: var(--radius); padding: 10px 14px; }
 .closed summary { cursor: pointer; color: var(--muted); font-size: 14px; }
 
+
+/* القوائم المطوية داخل قائمة النواقص */
+details.card { display: block; }
+details.card > summary {
+  cursor: pointer;
+  list-style: none;
+  padding: 2px 0;
+  font-size: 15px;
+}
+details.card > summary::-webkit-details-marker { display: none; }
+details.card > summary::after {
+  content: '⌄';
+  float: inline-end;
+  color: var(--muted);
+}
+details.card[open] > summary::after { content: '⌃'; }
+details.card > * + * { margin-top: 8px; }
+details.card .row-card { margin-top: 8px; }
+
 /* --- المؤشرات والتنبيهات ------------------------------------------------- */
 
 .syncdot { width: 9px; height: 9px; border-radius: 50%; background: var(--line); flex: none; }

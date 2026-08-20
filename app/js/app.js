@@ -107,8 +107,26 @@ async function boot() {
   }
 
   if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('./sw.js').catch(() => {});
+    navigator.serviceWorker.register('./sw.js').then(watchForUpdate).catch(() => {});
   }
+}
+
+/**
+ * التطبيق يقلع من مخزون الجهاز، فالنسخة الجديدة لا تظهر إلا بعد إعادة فتح.
+ * بدون هذا التنبيه تظل على نسخة قديمة بلا أن تدري، وتحسب أن الإصلاح ما وصل.
+ */
+function watchForUpdate(registration) {
+  if (!registration) return;
+  registration.addEventListener('updatefound', () => {
+    const fresh = registration.installing;
+    if (!fresh) return;
+    fresh.addEventListener('statechange', () => {
+      // وجود مسيطر حالي يعني أن هذي ترقية لا تثبيتاً أول
+      if (fresh.state === 'installed' && navigator.serviceWorker.controller) {
+        toast('نزل تحديث — سكّر التطبيق وافتحه من جديد', 'ok');
+      }
+    });
+  });
 }
 
 // تُستدعى من الشاشات بعد أي كتابة

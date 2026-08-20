@@ -54,11 +54,32 @@ export function deviates(account, identities) {
   return normalize(ident.email) !== normalize(account.email);
 }
 
-/** الناقص: بلا هوية، أو مستورد لم تؤكّده، أو مخالف لقاعدته. */
-export function needsReview(account, identities) {
-  return !account.identity_id ||
-         account.confidence === 'imported' ||
-         deviates(account, identities);
+/**
+ * الطابور: ما لم تنظر إليه بعد، ولا شيء غيره.
+ *
+ * كان التعريف يشمل "بلا هوية" و"يخالف قاعدته"، وكان خطأً قاتلاً: شاشة
+ * المراجعة لا تملك إزالة أيٍّ منهما، فيرجع السجل نفسه بعد كل حفظ ويبدو
+ * الزر كأنه لا يعمل. الطابور الذي لا ينفد ليس طابوراً.
+ *
+ * الملاحظتان تحتهما لم تُلغَ — صارتا وصفاً يُعرض وقائمة تُتصفَّح، لا قيداً
+ * يحبس السجل إلى الأبد.
+ */
+export function awaitingReview(account) {
+  return account.confidence === 'imported';
+}
+
+export function missingIdentity(account) {
+  return !account.identity_id;
+}
+
+/** كل ما يستحق نظرة، مقسّماً على أسبابه. الأقسام تتقاطع عمداً. */
+export function reviewBuckets(accounts, identities) {
+  const live = accounts.filter((a) => a.status !== 'closed');
+  return {
+    queue:    live.filter(awaitingReview),
+    noIdent:  live.filter((a) => !awaitingReview(a) && missingIdentity(a)),
+    deviant:  live.filter((a) => !awaitingReview(a) && deviates(a, identities)),
+  };
 }
 
 /** يبحث عن خدمة قائمة بأي مرادف أو بالاسم — أساس منع الحسابات المكررة. */

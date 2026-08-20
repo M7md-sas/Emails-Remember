@@ -5,7 +5,7 @@ import * as api from '../api.js';
 import * as store from '../store.js';
 import { sync } from '../sync.js';
 import { downloadBackup, restoreBackup, daysSinceBackup } from '../export.js';
-import { loadAll, needsReview } from '../data.js';
+import { loadAll, reviewBuckets } from '../data.js';
 import { $, esc, back, toast, confirmDialog, fmtDate, countRemaining } from '../ui.js';
 import { render, pinIsSet } from '../app.js';
 import { hashPin } from './login.js';
@@ -17,9 +17,10 @@ export async function show(root) {
   const due = (await daysSinceBackup()) >= 30;
   const session = api.getSession();
   const who = session && session.user ? session.user.email : '';
-  const pendingCount = accounts.filter(
-    (a) => needsReview(a, identities) && a.status !== 'closed'
-  ).length;
+  // العدّاد يعرض الطابور وحده — الملاحظات تحته لا تُعدّ نواقص عالقة
+  const buckets = reviewBuckets(accounts, identities);
+  const pendingCount = buckets.queue.length;
+  const notesCount = buckets.noIdent.length + buckets.deviant.length;
 
   root.innerHTML = `
     <div class="topbar">
@@ -42,7 +43,8 @@ export async function show(root) {
         <h3>الأدوات</h3>
         <a class="btn ghost wide" href="#/import">استيراد من المتصفح</a>
         <a class="btn ghost wide" href="#/review">
-          قائمة الناقص${pendingCount ? ` — ${esc(countRemaining(pendingCount))}` : ''}
+          قائمة النواقص${pendingCount ? ` — ${esc(countRemaining(pendingCount))}`
+            : notesCount ? ` — ${notesCount} ملاحظة` : ''}
         </a>
         <a class="btn ghost wide" href="#/dashboard">توزيع الحسابات على الإيميلات</a>
       </div>
