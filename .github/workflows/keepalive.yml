@@ -1,0 +1,65 @@
+# ---------------------------------------------------------------------------
+#  النبض اليومي
+#
+#  يسوي شيئين لا شيئاً واحداً، وكلاهما ضروري:
+#
+#  1. يضرب قاعدة Supabase — الخطة المجانية توقف أي مشروع بلا نشاط كافٍ خلال
+#     سبعة أيام، وبعد التوقف عندك تسعون يوماً فقط لاستعادته.
+#
+#  2. يعدّل ملفاً في المستودع ويدفعه — المهام المجدولة في GitHub تتعطل
+#     تلقائياً بعد ستين يوماً بلا نشاط في المستودع. فلولا هذه الخطوة لمات
+#     النبض بصمت، ثم مات المشروع بعده، وأنت تحسب نفسك محمياً.
+# ---------------------------------------------------------------------------
+name: نبضة الإبقاء
+
+on:
+  schedule:
+    - cron: '17 4 * * *'   # يومياً 4:17 بتوقيت UTC
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  beat:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: اقرأ الرابط والمفتاح من ملف الإعدادات
+        id: cfg
+        run: |
+          # مصدر واحد للحقيقة — لو تغيّر المشروع ما ننسى تحديث مكانين
+          url=$(grep -oP "SUPABASE_URL\s*=\s*'\K[^']+" app/js/config.js)
+          key=$(grep -oP "SUPABASE_KEY\s*=\s*'\K[^']+" app/js/config.js)
+          if [ -z "$url" ] || [ -z "$key" ]; then
+            echo "ما قدرت أقرأ الإعدادات من app/js/config.js" >&2
+            exit 1
+          fi
+          echo "url=$url" >> "$GITHUB_OUTPUT"
+          echo "key=$key" >> "$GITHUB_OUTPUT"
+
+      - name: اضرب القاعدة
+        run: |
+          code=$(curl -s -o /tmp/out.json -w '%{http_code}' \
+            -X PATCH "${{ steps.cfg.outputs.url }}/rest/v1/heartbeat?id=eq.1" \
+            -H "apikey: ${{ steps.cfg.outputs.key }}" \
+            -H "Content-Type: application/json" \
+            -H "Prefer: return=representation" \
+            -d '{"beat_at":"now()"}')
+          echo "HTTP $code"; cat /tmp/out.json
+          # 540 يعني أن المشروع متوقف فعلاً — نفشل بصوت عالٍ لا بصمت
+          if [ "$code" = "540" ]; then
+            echo "::error::المشروع متوقف. استعده من لوحة تحكم Supabase خلال 90 يوماً من التوقف."
+            exit 1
+          fi
+          [ "$code" = "200" ] || exit 1
+
+      - name: أبقِ المستودع نشطاً
+        run: |
+          date -u +'%Y-%m-%dT%H:%M:%SZ' > .github/heartbeat.txt
+          git config user.name  'github-actions[bot]'
+          git config user.email 'github-actions[bot]@users.noreply.github.com'
+          git add .github/heartbeat.txt
+          git diff --staged --quiet || git commit -m 'نبضة إبقاء [skip ci]'
+          git push

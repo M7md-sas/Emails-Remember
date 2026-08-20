@@ -1,0 +1,117 @@
+// ---------------------------------------------------------------------------
+//  المسار والإقلاع
+// ---------------------------------------------------------------------------
+import * as api from './api.js';
+import { sync, syncSoon, watchConnection, onSyncChange } from './sync.js';
+import { $, go, toast } from './ui.js';
+import { backupIsDue } from './export.js';
+
+import * as loginScreen      from './screens/login.js';
+import * as homeScreen       from './screens/home.js';
+import * as answerScreen     from './screens/answer.js';
+import * as adviseScreen     from './screens/advise.js';
+import * as accountScreen    from './screens/account.js';
+import * as identitiesScreen from './screens/identities.js';
+import * as importScreen     from './screens/import.js';
+import * as settingsScreen   from './screens/settings.js';
+import * as dashboardScreen  from './screens/dashboard.js';
+import * as reviewScreen     from './screens/review.js';
+
+const ROUTES = {
+  '':           homeScreen,
+  's':          answerScreen,
+  'new':        adviseScreen,
+  'account':    accountScreen,
+  'identities': identitiesScreen,
+  'import':     importScreen,
+  'settings':   settingsScreen,
+  'dashboard':  dashboardScreen,
+  'review':     reviewScreen,
+};
+
+// القفل الرقمي حاجز سرعة أمام من يمسك جهازك، وليس تشفيراً — مكتوب في الإعدادات
+let unlocked = false;
+
+export function markUnlocked() {
+  unlocked = true;
+}
+
+export function pinIsSet() {
+  return !!localStorage.getItem('daftar.pin');
+}
+
+function parseHash() {
+  const raw = location.hash.replace(/^#\/?/, '');
+  const [path, query = ''] = raw.split('?');
+  const parts = path.split('/').filter(Boolean);
+  return {
+    route: parts[0] || '',
+    id: parts[1] || null,
+    params: Object.fromEntries(new URLSearchParams(query)),
+  };
+}
+
+export async function render() {
+  const root = $('#view');
+
+  if (!api.isSignedIn()) return loginScreen.show(root, { mode: 'signin' });
+  if (pinIsSet() && !unlocked) return loginScreen.show(root, { mode: 'lock' });
+
+  const { route, id, params } = parseHash();
+  const screen = ROUTES[route];
+  if (!screen) return go('#/');
+
+  document.body.dataset.route = route || 'home';
+  try {
+    await screen.show(root, { id, ...params });
+  } catch (err) {
+    console.error(err);
+    root.innerHTML = `<div class="pad"><p class="error">صار خطأ غير متوقع: ${err.message}</p></div>`;
+  }
+}
+
+/**
+ * الوصول من قائمة مشاركة أندرويد: يصل الرابط كمعامل في العنوان، فنحوّله
+ * فوراً إلى شاشة "وش أستعمل" معبّأة، ثم ننظّف العنوان حتى لا يتكرر عند التحديث.
+ */
+function handleShareTarget() {
+  const q = new URLSearchParams(location.search);
+  const shared = q.get('url') || q.get('text') || q.get('title');
+  if (!shared) return;
+  history.replaceState(null, '', location.pathname);
+  location.hash = '#/new?q=' + encodeURIComponent(shared);
+}
+
+function wireSyncIndicator() {
+  const dot = $('#syncdot');
+  onSyncChange((state) => {
+    dot.dataset.state = state;
+    dot.title = { running: 'يزامن…', ok: 'متزامن', offline: 'بلا اتصال — يعمل محلياً' }[state] || '';
+  });
+}
+
+async function boot() {
+  api.loadSession();
+  wireSyncIndicator();
+  watchConnection();
+  handleShareTarget();
+
+  window.addEventListener('hashchange', render);
+  await render();
+
+  if (api.isSignedIn()) {
+    sync().then(() => render());
+    if (await backupIsDue()) {
+      toast('مر شهر بلا نسخة احتياطية — صدّر من الإعدادات', 'warn');
+    }
+  }
+
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('./sw.js').catch(() => {});
+  }
+}
+
+// تُستدعى من الشاشات بعد أي كتابة
+export { syncSoon };
+
+boot();
