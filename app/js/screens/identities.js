@@ -8,6 +8,7 @@ import { loadAll, STARTER_IDENTITIES } from '../data.js';
 import { syncSoon } from '../sync.js';
 import { $, esc, back, toast, confirmDialog, countAccounts } from '../ui.js';
 import { render } from '../app.js';
+import { icon } from '../icons.js';
 
 const PALETTE = ['#2563eb', '#059669', '#d97706', '#7c3aed', '#dc2626', '#0891b2', '#be185d', '#4b5563'];
 
@@ -18,9 +19,9 @@ export async function show(root) {
 
   root.innerHTML = `
     <div class="topbar">
-      <button class="icon" data-act="back">›</button>
+      <button class="icon" data-act="back" aria-label="رجوع">${icon('back')}</button>
       <h1 class="grow">الهويات</h1>
-      <button class="icon" data-act="add">+</button>
+      <button class="icon" data-act="add" aria-label="أضف">${icon('plus')}</button>
     </div>
 
     ${identities.length ? '' : starter()}

@@ -61,11 +61,31 @@ export function rootDomain(input) {
   return TWO_PART_TLDS.has(lastTwo) ? parts.slice(-3).join('.') : lastTwo;
 }
 
-/** الاسم المقروء المشتق من نطاق: noon.com يصير noon */
+/** الاسم المقروء المشتق من نطاق: account.proton.me يصير Proton */
 export function labelFromDomain(domain) {
   const root = rootDomain(domain);
   const first = root.split('.')[0] || root;
   return first.charAt(0).toUpperCase() + first.slice(1);
+}
+
+/** هل هذا النص اسم مضيف متنكّر في هيئة اسم خدمة؟ */
+export function looksLikeHost(text) {
+  const t = String(text || '').trim();
+  return !!t && !/\s/.test(t) && /^[a-z0-9.-]+\.[a-z]{2,}$/i.test(t);
+}
+
+/**
+ * الاسم الذي يُعرض في القائمة.
+ *
+ * المتصفح يسمّي السجل باسم المضيف كاملاً — "account.proton.me" — وهذا
+ * صحيح تقنياً وعديم الفائدة بصرياً: تقرؤه ثلاث مرات قبل أن تعرف أنه بروتون.
+ * فإن كان الاسم مضيفاً اشتققنا منه اسماً مقروءاً، وإلا احترمنا ما كتبه
+ * المستخدم كما هو.
+ */
+export function displayName(rawName, url) {
+  const derived = labelFromDomain(url || rawName);
+  if (!rawName) return derived;
+  return looksLikeHost(rawName) && derived ? derived : String(rawName).trim();
 }
 
 function isSubsequence(needle, hay) {

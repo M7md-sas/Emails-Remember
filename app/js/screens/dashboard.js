@@ -6,6 +6,7 @@
 import { loadAll, identityById, LOGIN_METHODS } from '../data.js';
 import { normalize } from '../search.js';
 import { esc, back } from '../ui.js';
+import { icon } from '../icons.js';
 
 export async function show(root) {
   const { identities, accounts, items } = await loadAll();
@@ -35,7 +36,7 @@ export async function show(root) {
 
   root.innerHTML = `
     <div class="topbar">
-      <button class="icon" data-act="back">›</button>
+      <button class="icon" data-act="back" aria-label="رجوع">${icon('back')}</button>
       <h1 class="grow">توزيع الحسابات</h1>
     </div>
 

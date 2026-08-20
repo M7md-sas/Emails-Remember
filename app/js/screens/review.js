@@ -15,6 +15,7 @@ import { loadAll, reviewBuckets, deviates, saveAccount, confirmAccount,
 import { syncSoon } from '../sync.js';
 import { $, esc, back, toast, countIn } from '../ui.js';
 import { render } from '../app.js';
+import { icon } from '../icons.js';
 
 const label = (account) =>
   account.email || account.username || LOGIN_METHODS[account.login_method];
@@ -28,7 +29,7 @@ export async function show(root) {
   if (!queue.length && !noIdent.length && !deviant.length) {
     root.innerHTML = `
       <div class="topbar">
-        <button class="icon" data-act="back">›</button>
+        <button class="icon" data-act="back" aria-label="رجوع">${icon('back')}</button>
         <h1 class="grow">قائمة النواقص</h1>
       </div>
       <div class="empty">
@@ -46,7 +47,7 @@ export async function show(root) {
 
   root.innerHTML = `
     <div class="topbar">
-      <button class="icon" data-act="back">›</button>
+      <button class="icon" data-act="back" aria-label="رجوع">${icon('back')}</button>
       <h1 class="grow">قائمة النواقص</h1>
       ${queue.length ? `<span class="tag soft">${esc(countIn(queue.length,
         ['واحد باقٍ', 'اثنان باقيان', 'باقية', 'باقياً']))}</span>` : ''}
@@ -150,7 +151,7 @@ function list(title, note, rows, name, identities) {
             <div class="sub mono" dir="ltr">${esc(label(a))}</div>
             ${deviates(a, identities) ? `<div class="sub warn-text">${esc(deviationNote(a, identities))}</div>` : ''}
           </div>
-          <span class="chev">‹</span>
+          ${icon('chevron')}
         </a>`).join('')}
       ${rows.length > 50 ? `<p class="tiny muted center">و${rows.length - 50} غيرها</p>` : ''}
     </details>`;

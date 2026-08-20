@@ -14,13 +14,14 @@ import { loadAll, matchService, defaultIdentity, createService, saveAccount,
 import { rootDomain, labelFromDomain, normalize } from '../search.js';
 import { syncSoon } from '../sync.js';
 import { $, esc, go, back, toast, copyText, options } from '../ui.js';
+import { icon } from '../icons.js';
 
 export async function show(root, params) {
   const { identities, items } = await loadAll();
 
   if (!identities.length) {
     root.innerHTML = `
-      <div class="topbar"><button class="icon" data-act="back">›</button><h1 class="grow">وش أستعمل</h1></div>
+      <div class="topbar"><button class="icon" data-act="back" aria-label="رجوع">${icon('back')}</button><h1 class="grow">وش أستعمل</h1></div>
       <div class="empty">
         <h2>عرّف هوياتك أولاً</h2>
         <p class="muted">النصيحة تحتاج قاعدة تُبنى عليها — هوية أو أكثر بإيميلاتها.</p>
@@ -34,7 +35,7 @@ export async function show(root, params) {
 
   root.innerHTML = `
     <div class="topbar">
-      <button class="icon" data-act="back">›</button>
+      <button class="icon" data-act="back" aria-label="رجوع">${icon('back')}</button>
       <h1 class="grow">وش أستعمل</h1>
     </div>
     <div class="pad stack">

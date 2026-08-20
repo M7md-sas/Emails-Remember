@@ -106,9 +106,28 @@ async function boot() {
     }
   }
 
-  if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('./sw.js').then(watchForUpdate).catch(() => {});
+  registerWorker();
+}
+
+/**
+ * العامل الخدمي معطّل على الجهاز المحلي افتراضياً.
+ *
+ * وظيفته العمل بدون نت على النسخة المنشورة، أما أثناء التطوير فهو يقدّم
+ * ملفات مخزّنة ويخفي كل تعديل تكتبه — فتُصلح شيئاً وتحلف أنه ما انصلح.
+ * لتجربته محلياً أضف `?sw=1` إلى العنوان.
+ */
+function registerWorker() {
+  if (!('serviceWorker' in navigator)) return;
+
+  const local = ['localhost', '127.0.0.1'].includes(location.hostname);
+  if (local && !new URLSearchParams(location.search).has('sw')) {
+    navigator.serviceWorker.getRegistrations()
+      .then((regs) => regs.forEach((r) => r.unregister()))
+      .catch(() => {});
+    return;
   }
+
+  navigator.serviceWorker.register('./sw.js').then(watchForUpdate).catch(() => {});
 }
 
 /**

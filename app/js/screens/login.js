@@ -6,6 +6,7 @@
 import * as api from '../api.js';
 import { $, esc, toast } from '../ui.js';
 import { markUnlocked, render } from '../app.js';
+import { icon } from '../icons.js';
 
 export async function hashPin(pin) {
   const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode('daftar:' + pin));
@@ -19,8 +20,8 @@ export async function show(root, { mode }) {
 function showSignIn(root) {
   root.innerHTML = `
     <div class="gate">
-      <div class="brand">
-        <div class="brand-mark">د</div>
+      <div class="brand-block">
+        <div class="brand-mark">${icon('layers')}</div>
         <h1>دفتر الهويات</h1>
         <p class="muted">أي إيميل استعملت، وأين، ولماذا</p>
       </div>
@@ -64,8 +65,8 @@ function showSignIn(root) {
 function showLock(root) {
   root.innerHTML = `
     <div class="gate">
-      <div class="brand">
-        <div class="brand-mark">د</div>
+      <div class="brand-block">
+        <div class="brand-mark">${icon('layers')}</div>
         <h1>مقفل</h1>
         <p class="muted">اكتب الرمز لفتح الدفتر</p>
       </div>

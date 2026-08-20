@@ -4,7 +4,7 @@
 //  ما معنى أن حساباً يخالف قاعدته، وما معنى أنه ناقص.
 // ---------------------------------------------------------------------------
 import * as store from './store.js';
-import { rootDomain, normalize } from './search.js';
+import { rootDomain, normalize, looksLikeHost, labelFromDomain } from './search.js';
 
 export const LOGIN_METHODS = {
   email:  'إيميل وكلمة مرور',
@@ -168,3 +168,26 @@ export const STARTER_IDENTITIES = [
   { name: 'تسوق',       why: 'المتاجر والتوصيل — الإيميل يمتلئ بالعروض', color: '#d97706' },
   { name: 'تجارب',      why: 'تسجيل سريع لتجربة شيء لا أنوي البقاء فيه', color: '#7c3aed' },
 ];
+
+/**
+ * يصلح أسماء الخدمات التي دخلت كأسماء مضيفين من استيراد قديم.
+ * يعيد عدد ما أُصلح، ولا يلمس اسماً كتبته أنت بيدك.
+ */
+export async function repairServiceNames(items) {
+  let fixed = 0;
+  for (const it of items) {
+    const current = it.service.name;
+    if (!looksLikeHost(current)) continue;
+    const domain = (it.aliases.find((a) => a.kind === 'domain') || {}).alias || current;
+    const better = labelFromDomain(domain);
+    if (!better || normalize(better) === normalize(current)) continue;
+
+    // النطاق الأصلي يُحفظ كمرادف حتى لا يضيع مسار البحث به
+    const known = it.aliases.some((a) => normalize(a.alias) === normalize(current));
+    if (!known) await addAliases(it.service.id, [{ alias: current, kind: 'domain' }]);
+
+    await store.save('services', { ...it.service, name: better });
+    fixed++;
+  }
+  return fixed;
+}

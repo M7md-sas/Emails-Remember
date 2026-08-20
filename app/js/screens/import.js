@@ -8,6 +8,7 @@ import { loadAll, createService, addAliases, saveAccount } from '../data.js';
 import { sync } from '../sync.js';
 import { $, esc, back, toast } from '../ui.js';
 import { render } from '../app.js';
+import { icon } from '../icons.js';
 
 export async function show(root) {
   const { items } = await loadAll();
@@ -15,7 +16,7 @@ export async function show(root) {
 
   root.innerHTML = `
     <div class="topbar">
-      <button class="icon" data-act="back">›</button>
+      <button class="icon" data-act="back" aria-label="رجوع">${icon('back')}</button>
       <h1 class="grow">استيراد من المتصفح</h1>
     </div>
 

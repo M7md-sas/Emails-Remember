@@ -6,7 +6,7 @@
 //  إلى كائن ولا إلى تخزين ولا إلى شبكة. وكل التحليل يجري داخل المتصفح ولا
 //  يُرفع الملف إلى أي مكان إطلاقاً.
 // ---------------------------------------------------------------------------
-import { rootDomain, labelFromDomain, normalize } from './search.js';
+import { rootDomain, displayName, looksLikeHost, normalize } from './search.js';
 import { matchService } from './data.js';
 
 /** محلّل CSV كامل: يحترم علامات الاقتباس والفواصل والأسطر داخل الحقول. */
@@ -91,7 +91,7 @@ export function extractEntries(text) {
       url,
       domain: rootDomain(url),
       username,
-      name: name || labelFromDomain(url),
+      name: displayName(name, url),
       note: pick(row, iNote),
     });
   }
@@ -115,8 +115,10 @@ export function planImport(entries, items) {
       groups.set(key, { key, domain: e.domain, name: e.name, notes: new Set(), logins: new Map() });
     }
     const g = groups.get(key);
-    // نفضّل الاسم المقروء على النطاق الخام كعنوان للخدمة
-    if (e.name && e.name.length > g.name.length && !/^https?:/i.test(e.name)) g.name = e.name;
+    // نفضّل الاسم المقروء دائماً، ولا نرقّي اسم مضيف لمجرد أنه أطول
+    if (e.name && !looksLikeHost(e.name) && !/^https?:/i.test(e.name)) {
+      if (looksLikeHost(g.name) || e.name.length > g.name.length) g.name = e.name;
+    }
     if (e.note) g.notes.add(e.note);
     const id = normalize(e.username);
     if (id && !g.logins.has(id)) g.logins.set(id, e.username);

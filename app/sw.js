@@ -11,7 +11,9 @@
 //  ارفع الرقم عند كل نشر يغيّر ملفاً من القائمة. بدونه يُمسح المخزون القديم
 //  ولا يُبنى الجديد، فيظل المستخدم على نسخة قديمة بلا أن يدري.
 // ---------------------------------------------------------------------------
-const VERSION = 'daftar-v2';
+const VERSION = 'daftar-v3';
+// مخزون الخطوط منفصل عن النسخة عمداً: لا داعي لإعادة تنزيلها مع كل نشر
+const FONT_CACHE = 'daftar-fonts';
 
 const SHELL = [
   './',
@@ -23,6 +25,7 @@ const SHELL = [
   './js/config.js',
   './js/data.js',
   './js/export.js',
+  './js/icons.js',
   './js/import-csv.js',
   './js/search.js',
   './js/store.js',
@@ -54,16 +57,27 @@ self.addEventListener('install', (event) => {
 self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches.keys()
-      .then((keys) => Promise.all(keys.filter((k) => k !== VERSION).map((k) => caches.delete(k))))
+      .then((keys) => Promise.all(
+        keys.filter((k) => k !== VERSION && k !== FONT_CACHE).map((k) => caches.delete(k))))
       .then(() => self.clients.claim())
   );
 });
+
+const FONT_HOSTS = new Set(['fonts.googleapis.com', 'fonts.gstatic.com']);
 
 self.addEventListener('fetch', (event) => {
   const { request } = event;
   if (request.method !== 'GET') return;
 
   const url = new URL(request.url);
+
+  // الخطوط من جوجل تُخزَّن دائماً وإلى الأبد: ملفات ثابتة لا تتغيّر، وبدون
+  // تخزينها يرتد التطبيق للخط النظامي أول ما ينقطع النت فيتغيّر شكله كله.
+  if (FONT_HOSTS.has(url.host)) {
+    event.respondWith(cacheForever(request));
+    return;
+  }
+
   // طلبات الخادم لا تُخزَّن أبداً — البيانات القديمة أسوأ من غيابها
   if (url.origin !== self.location.origin) return;
 
@@ -96,4 +110,18 @@ async function handle(request) {
     status: 503,
     headers: { 'Content-Type': 'text/plain; charset=utf-8' },
   });
+}
+
+async function cacheForever(request) {
+  const cache = await caches.open(FONT_CACHE);
+  const hit = await cache.match(request);
+  if (hit) return hit;
+  try {
+    const res = await fetch(request);
+    // الاستجابة المعتمة مقبولة هنا: لا نحتاج قراءتها، نحتاج تقديمها فقط
+    if (res && (res.ok || res.type === 'opaque')) cache.put(request, res.clone());
+    return res;
+  } catch {
+    return new Response('', { status: 504 });
+  }
 }

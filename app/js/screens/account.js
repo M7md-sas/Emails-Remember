@@ -5,6 +5,7 @@ import { loadAll, saveAccount, removeAccount, identityById,
          LOGIN_METHODS, STATUSES } from '../data.js';
 import { syncSoon } from '../sync.js';
 import { $, esc, go, back, toast, options, confirmDialog } from '../ui.js';
+import { icon } from '../icons.js';
 
 export async function show(root, { id, service: serviceParam }) {
   const { identities, items, accounts } = await loadAll();
@@ -30,7 +31,7 @@ export async function show(root, { id, service: serviceParam }) {
 
   root.innerHTML = `
     <div class="topbar">
-      <button class="icon" data-act="back">›</button>
+      <button class="icon" data-act="back" aria-label="رجوع">${icon('back')}</button>
       <h1 class="grow">${isNew ? 'حساب جديد' : 'تعديل الحساب'}</h1>
     </div>
     <p class="pad muted">في <b>${esc(item.service.name)}</b></p>
